@@ -3,7 +3,7 @@ LrRNAseq GAST processes BLAST alignments of full length long read RNAseq transcr
 
 ![Screenshot](318A10_cov25_wORFs_wSynteny_wSpacing_wSplicing_normal_intron_filter_highlights2.png)
 
-The **lrRNAseq_GAST_visualiser.ipynb** is the main notebook used for visualisation of collective BLAST alignments (pseudo Global alignment).
+The **lrRNAseq_GAST_visualiser.ipynb** is the main notebook used for visualisation of collective BLAST alignments (pseudo Global alignment). The notebook contains detailed instructions of use within.
 
 The **bioinformatic_functions.ipynb** is required to be imported in the main file to call multiple functions from.
 
