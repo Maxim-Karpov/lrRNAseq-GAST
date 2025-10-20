@@ -277,10 +277,10 @@ cov50_ranges_["index"] = cov50_ranges_.index
 
 # Step 13 - Algorithm for establishing transcript arrangement on plotting tracks
 
-After plotting each track, it must recalculate overlapping/non-overlapping transcripts.
+You have a single variable to specify - BATCH_SIZE, which determines the number of transcripts the program will attempt to optimally plot at once. Beware that BATCH_SIZE scales exponentially with time, but higher BATCH_SIZE will produce more compact plot. After plotting each track, it must recalculate overlapping/non-overlapping transcripts.
 
 ```
-BATCH_SIZE = 40 #larger batches take exponentially longer to process, but produce more compact plot
+BATCH_SIZE = 40 
 lrRNAseq_plot_df = pd.DataFrame()
 cov50_ranges_bu = pd.DataFrame()
 
