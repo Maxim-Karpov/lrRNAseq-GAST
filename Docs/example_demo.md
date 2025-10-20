@@ -754,7 +754,7 @@ lrRNAseq_plot_df["syntenous_indexes_unwrapped"] = lrRNAseq_plot_df["syn_idxs_cor
 lrRNAseq_plot_df["syntenous_indexes_int_unwrapped"]  = lrRNAseq_plot_df["syntenous_indexes_unwrapped"].apply(lambda x: [int(i) for i in x])
 ```
 
-# Step 16 - Plot everything
+# Step 16 - Plot everything*
 
 This is the final step, which produces the lrRNAseq-GAST plot. Run the cell. The image will pop up in the notebook. You can save the image by right clicking with the mouse whilst holding Ctrl on the keyboard. The majority of the plotted alignment regions will be false positives, but the real alignments of transcript exons onto their complementary genes will be obvious to the naked eye i.e. the introns will be short, exons compact and non-repetitive, multiple transcripts will be consistently supportive of the gene's existence.
 
@@ -916,4 +916,6 @@ You can then check the name of the middle transcript by examining the TrNames co
 ```
 lrRNAseq_plot_df.iloc[19]["TrNames"]
 ```
-Outputs ['m64045e_240201_155513/19923849/ccs_neph', 'm64045e_240201_155513/2950492/ccs_gizz', 'm64045e_240201_155513/23136524/ccs_gizz'], where the middle transcript name is the one of our interest. The exact coordinates for the exons will be in the "coord_ranges" column. The ORF coordinates are in the "ORF_coords" (largest ORF only) and "all_ORF_coords" columns.
+Outputs ['m64045e_240201_155513/19923849/ccs_neph', **'m64045e_240201_155513/2950492/ccs_gizz'**, 'm64045e_240201_155513/23136524/ccs_gizz'], where the middle transcript name is the one of our interest. The exact coordinates for the exons will be in the "coord_ranges" column. The ORF coordinates are in the "ORF_coords" (largest ORF only) and "all_ORF_coords" columns.
+
+You can then extract the transcripts from your FASTA file and run NCBI BLAST on them to determine which gene they code for/is found on your genomic sequence.
