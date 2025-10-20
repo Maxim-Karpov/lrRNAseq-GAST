@@ -13,6 +13,7 @@ The rest of the files serve as example data to try out.
 - Jupyter Notebook or Jupyter Lab
 - Python libraries: Pandas, Matplotlib, Numpy, Regex, Biopython, OS, ast, operator
 - seqtk installed via bioconda i.e. conda install bioconda::seqtk
+- BLAST, outputting in -outfmt '6 qseqid sseqid slen qlen qstart qend sstart send length mismatch gapopen pident evalue bitscore' format.
 
 [Full documentation](Docs/overview.md)
 
