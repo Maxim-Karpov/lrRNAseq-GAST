@@ -125,7 +125,7 @@ all_blast["counts"] = all_blast.groupby("qseqid")["sseqid"].transform("count")
 
 # Step 7 - Sort dataframe by subject start
 
-Self explanatory. Run the cell.
+Self explanatory, performed for the sake of further processing. Run the cell.
 
 ```
 cov50=all_blast.sort_values("sstart").reset_index(drop=True)
@@ -160,4 +160,20 @@ FILTERED_TRANCRIPT_IDS = "./aligned_lrRNAseq_cov25_filtered.txt"
 write_list(cov50.drop_duplicates("qseqid")["qseqid"].tolist(), FILTERED_TRANCRIPT_IDS)
 ```
 
-# Step 9 - 
+# Step 9 - Extract the transcripts that passed the filtration and import into the notebook
+
+Step produces a FASTA file including only the transcripts that passed the filtration procedure. Seqtk subseq extracts transcripts by transcript ID from the main lrRNAseq fasta. Enter path to the initial lrRNAseq file into the ALL_TRANSCRIPTS_PATH variable and the name of the fasta file that will contain post-filtered transcripts into the FILTERED_TRANSCRIPTS_FASTA_PATH variable. Run the cell.
+
+```
+ALL_TRANSCRIPTS_PATH = "./all_transcripts.fasta"
+FILTERED_TRANSCRIPTS_FASTA_PATH = "filtered_transcripts.fasta"
+os.system(f"seqtk subseq {ALL_TRANSCRIPTS_PATH} {FILTERED_TRANSCRIPT_IDS} > {FILTERED_TRANSCRIPTS_PATH}")
+```
+
+Import these transcripts into the notebook environment. If your transcripts still contain barcode sequences at either end (the example data contains barcodes of length 39 bp at either end), you need to remove the barcodes by specifying their length into the BARCODE_LEN variable. The program then imports these transcripts and calclates various statistics revolving around their Open Reading Frames.
+
+```
+BACRODE_LEN = 39
+cov50_fasta = parse_fasta(FILTERED_TRANSCRIPT_FASTA_PATH,rm_barcode=BARCODE_LEN)[0]
+all_stats = find_tr_ORF_stats(cov50_fasta["seq"].tolist(),cov50_fasta["id"].tolist(),tissue=True, include_seq=True)
+```
