@@ -756,7 +756,7 @@ lrRNAseq_plot_df["syntenous_indexes_int_unwrapped"]  = lrRNAseq_plot_df["synteno
 
 # Step 16 - Plot everything*
 
-This is the final step, which produces the lrRNAseq-GAST plot. Run the cell. The image will pop up in the notebook. You can save the image by right clicking with the mouse whilst holding Ctrl on the keyboard. The majority of the plotted alignment regions will be false positives, but the real alignments of transcript exons onto their complementary genes will be obvious to the naked eye i.e. the introns will be short, exons compact and non-repetitive, multiple transcripts will be consistently supportive of the gene's existence.
+This is the final step, which produces the lrRNAseq-GAST plot. Run the cell. The image will pop up in the notebook. You can save the image by right clicking with the mouse whilst holding Ctrl on the keyboard. The majority of the plotted alignment regions will be false positives, but the real alignments of transcript exons onto their complementary genes will be obvious to the naked eye i.e. the introns will be short, exons compact and non-repetitive, multiple transcripts will be consistently supportive of the gene's existence. You can expect to see a lot less false positives, but retain the majority of the legitimate transcript alignments if you configure the filtration options e.g. set MAX_INTRON_LENGHT to 7000 and MIN_COVERAGE to 35. But you may miss out on certain rare genes which naturally have large exons; in the case of our example, we don't miss anything using these parameters, but remove 50%+ of the false positives.
 
 ```
 seq_length = seq_len
