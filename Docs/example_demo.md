@@ -4,7 +4,7 @@ This guide will walk through the main Jupyter-Notebook of the software - lrRNAse
 
 For best experience, Linux-based operating systems are advised; this guide will assume you have a Linux-based operating system. This is mostly important when using BLAST.
 
-* = work in progress.
+*= work in progress.
 
 ## Step 1 - Download lrRNAseq-GAST
 
