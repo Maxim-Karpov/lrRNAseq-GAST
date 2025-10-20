@@ -13,6 +13,7 @@ The rest of the files serve as example data to try out.
 - Jupyter Notebook or Jupyter Lab
 - Python libraries: Pandas, Matplotlib, Numpy, Regex, Biopython, OS, ast, operator
 - seqtk installed via bioconda i.e. conda install bioconda::seqtk
+
 [Full documentation](Docs/overview.md)
 
 
