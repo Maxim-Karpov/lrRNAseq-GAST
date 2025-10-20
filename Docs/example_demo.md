@@ -4,6 +4,8 @@ This guide will walk through the main Jupyter-Notebook of the software - lrRNAse
 
 For best experience, Linux-based operating systems are advised; this guide will assume you have a Linux-based operating system. This is mostly important when using BLAST.
 
+* = work in progress.
+
 ## Step 1 - Download lrRNAseq-GAST
 
 Download the entire lrRNAseq-GAST repository. This can be done by clicking on the green "<> Code" drop down menu button on the main page of lrRNAseq-GAST repository, then clicking "Download ZIP", and extracting the ZIP into the directory of choice.
@@ -198,7 +200,7 @@ seq_len = len(my_seq)
 
 # Step 11 - Calculate further ORF statistics*
 
-In this step, the program calculates other various ORF statistics, combining the BLAST alignments with the predicted ORFs in the transcript sequences. In essence, the program determines which alignment regions on query fall in range of transcript's ORFs/largest ORF. This step may take a few minutes, run the cell.
+In this step, the program calculates other various ORF statistics, combining the BLAST alignments with the predicted ORFs in the transcript sequences. In essence, the program determines which alignment regions on query fall in range of transcript's ORFs/largest ORF. The alignments falling into any ORF will be coloured in red, whilst the ones falling into the largest ORF, will be yellow on the final plot. This step may take a few minutes, run the cell.
 
 ```
 #calculate ORF overlap statistics
@@ -275,9 +277,9 @@ cov50_ranges_["NumExon"] = cov50_ranges_["srange"].apply(lambda x: len(x)/2)
 cov50_ranges_["index"] = cov50_ranges_.index
 ```
 
-# Step 13 - Algorithm for establishing transcript arrangement on plotting tracks
+# Step 13 - Algorithm for establishing transcript arrangement on plotting tracks*
 
-You have a single variable to specify - BATCH_SIZE, which determines the number of transcripts the program will attempt to optimally plot at once. Beware that BATCH_SIZE scales exponentially with time, but higher BATCH_SIZE will produce more compact plot. After plotting each track, it must recalculate overlapping/non-overlapping transcripts.
+You have a single variable to specify - BATCH_SIZE, which determines the number of transcripts the program will attempt to optimally plot at once. Beware that BATCH_SIZE scales exponentially with time, but higher BATCH_SIZE will produce more compact plot. After plotting each track, it must recalculate overlapping/non-overlapping transcripts. The details of the algorithm will be verbalised and visualised in future versions of the documentation.
 
 ```
 BATCH_SIZE = 40 
@@ -551,3 +553,367 @@ for iii in range(len(ranges)-1):
     lrRNAseq_plot_df = lrRNAseq_plot_df.sort_values("Total_aln_len",ascending=False)
     lrRNAseq_plot_df = lrRNAseq_plot_df.reset_index(drop=True)
 ```
+
+Reset the cov50_ranges_ dataframe to its initial state before proceeding. Run the cell.
+
+```
+cov50_ranges_ =  cov50_ranges_bu.copy()
+cov50_ranges_["NumExon"] = cov50_ranges_["srange"].apply(lambda x: len(x)/2)
+cov50_ranges_["index"] = cov50_ranges_.index
+```
+
+# Step 14 - Combining transcript plot dataframe with the BLAST dataframe
+
+Combine transcript plot dataframe (lrRNAseq_plot_df) with the BLAST dataframe (cov50_ranges_) on transcript basis. Required for further processing. Run the cell.
+
+```
+lrRNAseq_plot_df["ORF_coords"] = ""
+lrRNAseq_plot_df["all_ORF_coords"] = ""
+lrRNAseq_plot_df["qranges_in_largest_ORF"] = ""
+lrRNAseq_plot_df["qranges_in_ORF"] = ""
+lrRNAseq_plot_df["qstarts_sorted_values"] = ""
+lrRNAseq_plot_df["qstarts_sorted_order"] = ""
+lrRNAseq_plot_df["qstarts_sorted_order_sequential"] = ""
+lrRNAseq_plot_df["qstarts"] = ""
+lrRNAseq_plot_df["index"] = lrRNAseq_plot_df.index
+
+for idx, row in lrRNAseq_plot_df.iterrows():
+    qstarts_sorted_order_sequential_list = []
+    qstarts_sorted_order_list = []
+    qstarts_sorted_values_list = []
+    qranges_in_largest_ORF_list = []
+    qranges_in_ORF_list = []
+    all_ORF_coords_list = []
+    ORF_coords_list = []
+    qstarts_list = []
+    if type(lrRNAseq_plot_df["TrNames"][idx])==str:
+        id = lrRNAseq_plot_df["TrNames"][idx]
+        qstarts_sorted_order_sequential_list.append(cov50_ranges_[cov50_ranges_["qseqid"]==id]["qstarts_sorted_order_sequential"].tolist()[0])
+        qstarts_sorted_order_list.append(cov50_ranges_[cov50_ranges_["qseqid"]==id]["qstarts_sorted_order"].tolist()[0])
+        qstarts_sorted_values_list.append(cov50_ranges_[cov50_ranges_["qseqid"]==id]["qstarts_sorted_values"].tolist()[0])
+        qranges_in_largest_ORF_list.append(cov50_ranges_[cov50_ranges_["qseqid"]==id]["qranges_in_largest_ORF"].tolist()[0])
+        qranges_in_ORF_list.append(cov50_ranges_[cov50_ranges_["qseqid"]==id]["qranges_in_ORF"].tolist()[0])
+        all_ORF_coords_list.append(cov50_ranges_[cov50_ranges_["qseqid"]==id]["all_ORF_coords"].tolist()[0])
+        ORF_coords_list.append(cov50_ranges_[cov50_ranges_["qseqid"]==id]["ORF_coords"].tolist()[0])
+        qstarts_list.append(cov50_ranges_[cov50_ranges_["qseqid"]==id]["qstarts"].tolist()[0])
+        lrRNAseq_plot_df.loc[lrRNAseq_plot_df["index"]== idx, "ORF_coords"] = str(ORF_coords_list)
+        lrRNAseq_plot_df.loc[lrRNAseq_plot_df["index"]== idx, "all_ORF_coords"] = str(all_ORF_coords_list)
+        lrRNAseq_plot_df.loc[lrRNAseq_plot_df["index"]== idx, "qranges_in_largest_ORF"] = str(qranges_in_largest_ORF_list)
+        lrRNAseq_plot_df.loc[lrRNAseq_plot_df["index"]== idx, "qranges_in_ORF"] = str(qranges_in_ORF_list)
+        lrRNAseq_plot_df.loc[lrRNAseq_plot_df["index"]== idx, "qstarts_sorted_values"] = str(qstarts_sorted_values_list)
+        lrRNAseq_plot_df.loc[lrRNAseq_plot_df["index"]== idx, "qstarts_sorted_order"] = str(qstarts_sorted_order_list)
+        lrRNAseq_plot_df.loc[lrRNAseq_plot_df["index"]== idx, "qstarts_sorted_order_sequential"] = str(qstarts_sorted_order_sequential_list)
+        lrRNAseq_plot_df.loc[lrRNAseq_plot_df["index"]== idx, "qstarts"] = str(qstarts_list)
+    else:    
+        for id in lrRNAseq_plot_df["TrNames"][idx]:
+            qstarts_sorted_order_sequential_list.append(cov50_ranges_[cov50_ranges_["qseqid"]==id]["qstarts_sorted_order_sequential"].tolist()[0])
+            qstarts_sorted_order_list.append(cov50_ranges_[cov50_ranges_["qseqid"]==id]["qstarts_sorted_order"].tolist()[0])
+            qstarts_sorted_values_list.append(cov50_ranges_[cov50_ranges_["qseqid"]==id]["qstarts_sorted_values"].tolist()[0])
+            qranges_in_largest_ORF_list.append(cov50_ranges_[cov50_ranges_["qseqid"]==id]["qranges_in_largest_ORF"].tolist()[0])
+            qranges_in_ORF_list.append(cov50_ranges_[cov50_ranges_["qseqid"]==id]["qranges_in_ORF"].tolist()[0])
+            all_ORF_coords_list.append(cov50_ranges_[cov50_ranges_["qseqid"]==id]["all_ORF_coords"].tolist()[0])
+            ORF_coords_list.append(cov50_ranges_[cov50_ranges_["qseqid"]==id]["ORF_coords"].tolist()[0])
+            qstarts_list.append(cov50_ranges_[cov50_ranges_["qseqid"]==id]["qstarts"].tolist()[0])
+            lrRNAseq_plot_df.loc[lrRNAseq_plot_df["index"]== idx, "ORF_coords"] = str(ORF_coords_list)
+            lrRNAseq_plot_df.loc[lrRNAseq_plot_df["index"]== idx, "all_ORF_coords"] = str(all_ORF_coords_list)
+            lrRNAseq_plot_df.loc[lrRNAseq_plot_df["index"]== idx, "qranges_in_largest_ORF"] = str(qranges_in_largest_ORF_list)
+            lrRNAseq_plot_df.loc[lrRNAseq_plot_df["index"]== idx, "qranges_in_ORF"] = str(qranges_in_ORF_list)
+            lrRNAseq_plot_df.loc[lrRNAseq_plot_df["index"]== idx, "qstarts_sorted_values"] = str(qstarts_sorted_values_list)
+            lrRNAseq_plot_df.loc[lrRNAseq_plot_df["index"]== idx, "qstarts_sorted_order"] = str(qstarts_sorted_order_list)
+            lrRNAseq_plot_df.loc[lrRNAseq_plot_df["index"]== idx, "qstarts_sorted_order_sequential"] = str(qstarts_sorted_order_sequential_list)
+            lrRNAseq_plot_df.loc[lrRNAseq_plot_df["index"]== idx, "qstarts"] = str(qstarts_list)
+
+lrRNAseq_plot_df["ORF_coords"] = lrRNAseq_plot_df["ORF_coords"].apply(lambda x: eval(x))
+lrRNAseq_plot_df["all_ORF_coords"] = lrRNAseq_plot_df["all_ORF_coords"].apply(lambda x: eval(x))
+lrRNAseq_plot_df["qranges_in_largest_ORF"] = lrRNAseq_plot_df["qranges_in_largest_ORF"].apply(lambda x: eval(x))
+lrRNAseq_plot_df["qranges_in_ORF"] = lrRNAseq_plot_df["qranges_in_ORF"].apply(lambda x: eval(x))
+lrRNAseq_plot_df["qstarts_sorted_values"] = lrRNAseq_plot_df["qstarts_sorted_values"].apply(lambda x: eval(x))
+lrRNAseq_plot_df["qstarts_sorted_order"] = lrRNAseq_plot_df["qstarts_sorted_order"].apply(lambda x: eval(x))
+lrRNAseq_plot_df["qstarts_sorted_order_sequential"] = lrRNAseq_plot_df["qstarts_sorted_order_sequential"].apply(lambda x: eval(x))
+lrRNAseq_plot_df["qstarts"] = lrRNAseq_plot_df["qstarts"].apply(lambda x: eval(x))
+```
+
+# Step 15 - work in progress*
+
+The following 11 cells deal with processing the plotting dataframe to a format that is plottalbe, and introduce the exon synteny/collinearity feature. Some algorithms used in this section are somewhat complex and will be explained in future versions of the documentation. The user does not need to input anything in these cells, but to simply run them.
+
+```
+#plotting requirements
+lrRNAseq_plot_df = lrRNAseq_plot_df.sort_values(by="Total_aln_len", ascending=False)
+lrRNAseq_plot_df["coverage"] = lrRNAseq_plot_df["total_exons"].apply(lambda x: [0]+[0,1,1,0]*int(x)+[0] )
+
+
+
+#further processing of plotting coordinates
+lrRNAseq_plot_df["coords2"] = ""
+for idx, row in lrRNAseq_plot_df.iterrows():
+    coords = lrRNAseq_plot_df["coords"][idx]
+    coords1 = coords[::2]
+    coords1_add = [x - 1 for x in coords1]
+    coords2 = coords[1::2]
+    coords2_add = [x + 1 for x in coords2]
+    lrRNAseq_plot_df["coords2"][idx] = lrRNAseq_plot_df["coords"][idx] + coords1_add + coords2_add 
+lrRNAseq_plot_df["coords2"] = lrRNAseq_plot_df["coords2"].apply(lambda x: [0]+x+[len(my_seq)])
+
+
+
+
+#plotting coordinate statistics
+lrRNAseq_plot_df["min"] = lrRNAseq_plot_df["coords"].apply(lambda x: min(x))
+lrRNAseq_plot_df["max"] = lrRNAseq_plot_df["coords"].apply(lambda x: max(x))
+lrRNAseq_plot_df["span"] = lrRNAseq_plot_df["max"] - lrRNAseq_plot_df["min"]
+lrRNAseq_plot_df.sort_values(by="span", ascending=False, inplace=True)
+
+#translate order and get coord ranges
+lrRNAseq_plot_df["qstarts_sorted_order_translated"] = lrRNAseq_plot_df["qstarts_sorted_order_sequential"].apply(lambda x: [translate_order(i) for i in x])
+lrRNAseq_plot_df["coord_ranges"] = lrRNAseq_plot_df["coords"].apply(lambda x: [[[x[::2],x[1::2]][0][i],[x[::2],x[1::2]][1][i]]for i in range(len([x[::2],x[1::2]][0]))])
+
+
+
+#create order dictionary for each transcript
+dict_list_outer = []
+for idx, row in lrRNAseq_plot_df.iterrows():
+    dict_list = []
+    for i in range(len(lrRNAseq_plot_df["qstarts_sorted_order_sequential"][idx])):        
+        d = {}
+        for j in range(len(lrRNAseq_plot_df["qstarts_sorted_order_sequential"][idx][i])):
+            d[lrRNAseq_plot_df["qstarts_sorted_values"][idx][i][j] ] = lrRNAseq_plot_df["qstarts_sorted_order_sequential"][idx][i][j]
+        dict_list.append(d)
+    dict_list_outer.append(dict_list)
+lrRNAseq_plot_df["order_dict"] = dict_list_outer
+
+#use order dictionary to check order of alignment regions in transcripts
+ordered_list_outer = []
+for idx, row in lrRNAseq_plot_df.iterrows():
+    ordered_list = []
+    for j in range(len(lrRNAseq_plot_df["order_dict"][idx])):
+        
+        o_dict = lrRNAseq_plot_df["order_dict"][idx][j]
+        qstarts = lrRNAseq_plot_df["qstarts"][idx][j]
+        ordered = []
+        
+        for i in range(len(qstarts)):
+            ordered.append(o_dict[qstarts[i]])
+        ordered_list.append(ordered)
+    ordered_list_outer.append(ordered_list)
+lrRNAseq_plot_df["exon_synteny"] = ordered_list_outer
+lrRNAseq_plot_df["centre_coords"] = lrRNAseq_plot_df["coord_ranges"].apply(lambda x: [int(i[0]+((i[1]-i[0])/2)) for i in x])
+
+#ordered exon indexes and correction for closely bundled centre coordinates for better visibility of the numbers in the plot
+lrRNAseq_plot_df["syntenous_indexes"] = lrRNAseq_plot_df["exon_synteny"].apply(lambda x: [syntenous_indexes(i) for i in x])
+lrRNAseq_plot_df["centre_coords_corrected"] = lrRNAseq_plot_df["centre_coords"].apply(lambda x: space_elements(x))
+
+#required for plotting multi-transcript syntentic regions
+#convert exons_per_tr to lists
+exons_per_tr_list = []
+for idx, row in lrRNAseq_plot_df.iterrows():
+    ex_per_tr = lrRNAseq_plot_df["exons_per_tr"][idx]
+    if type(ex_per_tr) == float:
+        exons_per_tr_list.append([int(ex_per_tr)])
+    else:
+        exons_per_tr_list.append(ex_per_tr)
+lrRNAseq_plot_df["exons_per_tr"] = exons_per_tr_list
+
+#make syntenous_indexes lists have even number of members
+new_xs = []
+for idx, row in lrRNAseq_plot_df.iterrows():
+    x = lrRNAseq_plot_df["syntenous_indexes"][idx].copy()
+# x = [[0,3,0],[0],[0,4,5,7]]
+    new_x = []
+    for i in x:
+        if len(i)%2!=0:
+            i.append(i[len(i)-1])
+        new_x.append(i)
+    new_xs.append(new_x)
+lrRNAseq_plot_df["syntenous_indexes_even"] = new_xs
+
+#increment subsequent transcript lists by number of exons in previous transcripts
+syn_idxs_corr_list = []
+for idx, row in lrRNAseq_plot_df.iterrows():
+    syn_idxs = lrRNAseq_plot_df["syntenous_indexes_even"][idx].copy()
+    # syn_idxs = [[0, 1], [0, 5, 6, 7, 8, 14, 15, 16, 22],[0,3]]
+    ex_per_tr = lrRNAseq_plot_df["exons_per_tr"][idx].copy()
+    # ex_per_tr = [2.0, 23.0, 4]
+    num_trs = len(syn_idxs)
+    increment = 0
+    syn_idxs_corrected = []
+    syn_idxs_corrected.append(syn_idxs[0])
+    
+    for i in range(1,num_trs):
+        increment += ex_per_tr[i-1]
+        syn_idxs_corrected.append((np.array(syn_idxs[i])+increment).tolist())
+    syn_idxs_corr_list.append(syn_idxs_corrected)
+lrRNAseq_plot_df["syn_idxs_corrected"] = syn_idxs_corr_list
+
+
+#finalising information
+lrRNAseq_plot_df["qranges_in_ORF_unwrapped"] = lrRNAseq_plot_df["qranges_in_ORF"].apply(lambda x: [i for i in extract_nested_values(x)] )
+lrRNAseq_plot_df["qranges_in_largest_ORF_unwrapped"] = lrRNAseq_plot_df["qranges_in_largest_ORF"].apply(lambda x: [i for i in extract_nested_values(x)] )
+lrRNAseq_plot_df["exon_synteny_unwrapped"] = lrRNAseq_plot_df["exon_synteny"].apply(lambda x: [i for i in extract_nested_values(x)] )
+lrRNAseq_plot_df["syntenous_indexes_unwrapped"] = lrRNAseq_plot_df["syn_idxs_corrected"].apply(lambda x: [i for i in extract_nested_values(x)] )
+lrRNAseq_plot_df["syntenous_indexes_int_unwrapped"]  = lrRNAseq_plot_df["syntenous_indexes_unwrapped"].apply(lambda x: [int(i) for i in x])
+```
+
+# Step 16 - Plot everything
+
+This is the final step, which produces the lrRNAseq-GAST plot. Run the cell. The image will pop up in the notebook. You can save the image by right clicking with the mouse whilst holding Ctrl on the keyboard. The majority of the plotted alignment regions will be false positives, but the real alignments of transcript exons onto their complementary genes will be obvious to the naked eye i.e. the introns will be short, exons compact and non-repetitive, multiple transcripts will be consistently supportive of the gene's existence.
+
+```
+seq_length = seq_len
+matplotlib.rcParams["agg.path.chunksize"] = 10000
+plt.rcParams['agg.path.chunksize'] = 10000
+figsize_param_w = min(int(seq_length/1100), 50)
+figsize_param_h = int(lrRNAseq_plot_df.shape[0]/2.5)
+plt.rcParams['figure.figsize'] = [figsize_param_w, figsize_param_h]
+plt.rcParams['figure.dpi'] = 140
+
+nrows = lrRNAseq_plot_df.shape[0]
+fig, axes = plt.subplots(nrows=nrows, ncols=1, sharex=False)
+plt.subplots_adjust(top=0.9, bottom=0.1, hspace=0)
+axes[lrRNAseq_plot_df.shape[0]-1].set_xlabel("")
+
+
+lrRNAseq_plot_df.reset_index(drop=True, inplace=True)
+
+for idx, row in lrRNAseq_plot_df.iterrows():
+#plot all alignment regions
+    temp_plot_df = pd.DataFrame()
+    temp_plot_df["coords"] = lrRNAseq_plot_df["coords2"][idx]
+    temp_plot_df.sort_values(by="coords", inplace=True)
+    temp_plot_df["coverage"] = lrRNAseq_plot_df["coverage"][idx]
+    temp_plot_df.plot.area(x="coords", y= "coverage", figsize=(figsize_param_w, figsize_param_h), grid=True,
+                           legend=False, ax = axes[idx], color='r', linewidth=1, xlim=[0,seq_length],zorder=1)
+#plot line if only 1 line in lane
+    temp_lines = pd.DataFrame()
+    if type(lrRNAseq_plot_df["range_per_tr"][idx][0]) == int:
+        temp_lines["coord"] = lrRNAseq_plot_df["range_per_tr"][idx]
+        temp_lines["midline"] = 0.5
+        temp_lines.plot.line(x="coord", y= "midline", figsize=(figsize_param_w, figsize_param_h), grid=True, 
+                             legend=False, ax = axes[idx], color='b', linewidth=3, xlim=[0,seq_length])
+#plot line if multiple lines in lane
+    else:
+        c = ["b","g","m","c","w","grey","k", "silver", "beige","teal","lightskyblue","r","y","lightgreen","peru"]
+        i=0
+        for line in lrRNAseq_plot_df["range_per_tr"][idx]:
+            temp_lines["coord"] = line
+            temp_lines["midline"] = 0.5
+            temp_lines.plot.line(x="coord", y= "midline", figsize=(figsize_param_w, figsize_param_h), grid=True,
+                                   legend=False, ax = axes[idx], color=c[i], linewidth=4, xlim=[0,seq_length])
+            i+=1
+#plot alignment region in ORF as a rectangle patch - border only
+    v = 0
+    coord_ranges = lrRNAseq_plot_df["coord_ranges"][idx]
+    qranges_in_ORF = lrRNAseq_plot_df["qranges_in_ORF_unwrapped"][idx]
+    # qranges_in_ORF = lrRNAseq_plot_df["qranges_in_ORF"][idx]
+    for c in coord_ranges:
+        if qranges_in_ORF[v] == True:
+            a2 = patches.Rectangle((c[0],0),c[1]-c[0],1,color="gold", fill=None,zorder=1)
+            axes[idx].add_patch(a2)
+        v+=1
+#plot alignment region in largest ORF as a rectangle patch - border and fill
+    v = 0
+    qranges_in_largest_ORF = lrRNAseq_plot_df["qranges_in_largest_ORF_unwrapped"][idx]
+    for c in coord_ranges:
+        if qranges_in_largest_ORF[v] == True:
+            a1 = patches.Rectangle((c[0],0),c[1]-c[0],1,color="gold",zorder=99)
+            a2 = patches.Rectangle((c[0],0),c[1]-c[0],1,color="gold", fill=None,zorder=1)
+            axes[idx].add_patch(a1)
+            axes[idx].add_patch(a2)
+        v+=1
+
+#plot text of syntentic order 
+    centre_coords = lrRNAseq_plot_df["centre_coords"][idx]
+    syntentic_order = lrRNAseq_plot_df["exon_synteny_unwrapped"][idx]
+    for i in range(len(centre_coords)):
+        fig.text(centre_coords[i], int((nrows-idx)/(nrows+1))+0.5, f"{syntentic_order[i]}", horizontalalignment="center", transform=axes[idx].transData, verticalalignment="center", fontsize=15, color="black")
+
+#plot syntentic frame
+    v = 0
+    coord_ranges = lrRNAseq_plot_df["coord_ranges"][idx]
+    structure = lrRNAseq_plot_df["syntenous_indexes_int_unwrapped"][idx]
+    syntentic_coords = []
+    for i in range(0,len(structure)-1,2):
+        start = coord_ranges[structure[i]][0]
+        end = coord_ranges[structure[i+1]][1]
+        syntentic_coords.append([start,end])
+    for c in syntentic_coords:
+        # a4 = patches.Rectangle((c[0],0)c[1]-c[0],1,color="pink",zorder=1)
+        a3 = patches.Rectangle((c[0],0),c[1]-c[0],1,color="pink",zorder=0)
+        axes[idx].add_patch(a3)
+        # axes[idx].add_patch(a4)
+        v+=1
+
+for idx in range(nrows):
+    if idx != 0 and idx != nrows-1:
+        axes[idx].set_xticklabels([])
+        axes[idx].set_xlabel("")
+        axes[idx].minorticks_on()
+        
+        # axes[idx].tick_params(axis='both', which='major', labelsize=30, pad=15, width=3, size=8) #labelbottom=True,labeltop=True,bottom=True,top=True
+        # axes[idx].tick_params(axis='both', which='minor', labelsize=30, pad=15, width=2, size=5) #labeltop=True,bottom=True,top=True
+        axes[idx].tick_params(axis='y', which='major', labelsize=30, pad=0, width=0, size=0) #labelbottom=True,labeltop=True,bottom=True,top=True
+        axes[idx].tick_params(axis='y', which='minor', labelsize=0, pad=0, width=0, size=0) #labeltop=True,bottom=True,top=True
+        axes[idx].tick_params(axis='x', which='major', labelsize=30, pad=15, width=3, size=8,labelbottom=True,labeltop=True,bottom=True,top=True) #labelbottom=True,labeltop=True,bottom=True,top=True
+        axes[idx].tick_params(axis='x', which='minor', labelsize=30, pad=15, width=2, size=5,labelbottom=True,labeltop=True,bottom=True,top=True) #labeltop=True,bottom=True,top=True
+        axes[idx].grid(which="major", axis="x", color = 'black', linestyle = '--', dashes=(5, 5), linewidth = 1.35, alpha=0.65) 
+        axes[idx].grid(which="minor", axis="x", color = 'black', linestyle = '-', dashes=(4, 5), linewidth = 0.85, alpha=0.45)    
+        for axis in ["top", "bottom", "left", "right"]: 
+            axes[idx].spines[axis].set_linewidth(2.5)
+        axes[0].xaxis.tick_top()
+        
+    elif idx == 0:
+        axes[idx].set_xlabel("")
+        axes[idx].minorticks_on()
+        
+        # axes[idx].tick_params(axis='both', which='major', labelsize=30, pad=15, width=3, size=8) #labelbottom=True,labeltop=True,bottom=True,top=True
+        # axes[idx].tick_params(axis='both', which='minor', labelsize=30, pad=15, width=2, size=5) #labeltop=True,bottom=True,top=True
+        axes[idx].tick_params(axis='y', which='major', labelsize=30, pad=0, width=0, size=0) #labelbottom=True,labeltop=True,bottom=True,top=True
+        axes[idx].tick_params(axis='y', which='minor', labelsize=0, pad=0, width=0, size=0) #labeltop=True,bottom=True,top=True
+        axes[idx].tick_params(axis='x', which='major', labelsize=30, pad=15, width=3, size=8,labelbottom=0,labeltop=True,bottom=0,top=True) #labelbottom=True,labeltop=True,bottom=True,top=True
+        axes[idx].tick_params(axis='x', which='minor', labelsize=30, pad=15, width=2, size=5,labelbottom=0,labeltop=True,bottom=0,top=True) #labeltop=True,bottom=True,top=True
+        axes[idx].grid(which="major", axis="x", color = 'black', linestyle = '--', dashes=(5, 5), linewidth = 1.35, alpha=0.65) 
+        axes[idx].grid(which="minor", axis="x", color = 'black', linestyle = '-', dashes=(4, 5), linewidth = 0.85, alpha=0.45)    
+        for axis in ["top", "bottom", "left", "right"]: 
+            axes[idx].spines[axis].set_linewidth(2.5)
+        axes[0].xaxis.tick_top()
+
+    elif idx == nrows-1:
+        # axes[idx].tick_params(axis='both', which='major', labelsize=30, pad=15, width=3, size=8) #labelbottom=True,labeltop=True,bottom=True,top=True
+        # axes[idx].tick_params(axis='both', which='minor', labelsize=30, pad=15, width=2, size=5) #labeltop=True,bottom=True,top=True
+        axes[idx].tick_params(axis='y', which='major', labelsize=30, pad=0, width=0, size=0) #labelbottom=True,labeltop=True,bottom=True,top=True
+        axes[idx].tick_params(axis='y', which='minor', labelsize=0, pad=0, width=0, size=0) #labeltop=True,bottom=True,top=True
+        axes[idx].tick_params(axis='x', which='major', labelsize=30, pad=15, width=3, size=8,labelbottom=True,labeltop=0,bottom=True,top=0) #labelbottom=True,labeltop=True,bottom=True,top=True
+        axes[idx].tick_params(axis='x', which='minor', labelsize=30, pad=15, width=2, size=5,labelbottom=True,labeltop=0,bottom=True,top=0) #labeltop=True,bottom=True,top=True
+        axes[idx].grid(which="major", axis="x", color = 'black', linestyle = '--', dashes=(5, 5), linewidth = 1.35, alpha=0.65) 
+        axes[idx].grid(which="minor", axis="x", color = 'black', linestyle = '-', dashes=(4, 5), linewidth = 0.85, alpha=0.45)    
+        for axis in ["top", "bottom", "left", "right"]: 
+            axes[idx].spines[axis].set_linewidth(2.5)
+        axes[0].xaxis.tick_top()
+        axes[idx].set_xlabel("")
+        axes[idx].minorticks_on()
+        
+    for z, label in enumerate(axes[idx].get_yticklabels()):
+        if z >= 0 and z < len(axes[idx].get_yticklabels()):
+            label.set_visible(False)
+    
+    axes[idx].set_yticklabels([])
+```
+
+![Screenshot](./images/example_plot.png)
+
+If you would like to extract/investigate certain transcripts on the plot, you can query lrRNAseq_plot_df dataframe. This requires lightweight knowledge of Python's Pandas dataframes. Generally, you can extract these transcripts by querying a specified range of coordinates into which the transcript falls. For example, in the image above, there are 6-9 transcripts that are visually likely to be aligned to a gene in the genomic range of 25,000 - 45,000 bp. Each row in the lrRNAseq_plot_df dataframe represents a row/track in the plot e.g. the uppermost track will be the first row of the dataframe, whilst the lowermost will be the last row of dataframe. At the moment, there is no way to query the transcript by its coordinate range, this is work in progress. The easiest way to obtain your transcript is via index in the lrRNAseq_plot_df, which will equal its row on the plot counting from the top to bottom. For example, the transcripts of interest at the genomic range of 25k-45k are in the rows 20-23 on the plot, so we can fetch them in the following way:
+
+```
+lrRNAseq_plot_df[19:22]
+```
+**OR**
+```
+lrRNAseq_plot_df[19:22]["range_per_tr"]
+```
+Check the range_per_tr column to confirm the presence of the transcript range. In this example, the column outputs [[3475, 9532], **[29879, 40167]**, [43022, 90339]], which are the ranges of the 3 transcripts plotted in that particular lane/track, the middle one being the transcript of our interest.
+
+You can then check the name of the middle transcript by examining the TrNames column of the dataframe at index of interest, for example:
+```
+lrRNAseq_plot_df.iloc[19]["TrNames"]
+```
+Outputs ['m64045e_240201_155513/19923849/ccs_neph', 'm64045e_240201_155513/2950492/ccs_gizz', 'm64045e_240201_155513/23136524/ccs_gizz'], where the middle transcript name is the one of our interest. The exact coordinates for the exons will be in the "coord_ranges" column. The ORF coordinates are in the "ORF_coords" (largest ORF only) and "all_ORF_coords" columns.
