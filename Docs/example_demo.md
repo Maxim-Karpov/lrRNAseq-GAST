@@ -196,9 +196,9 @@ my_seq = "".join([line.strip() for line in open(GENOME_FASTA_PATH) if not line.s
 seq_len = len(my_seq)
 ```
 
-# Step 11 - Calculate further ORF statistics
+# Step 11 - Calculate further ORF statistics*
 
-
+In this step, the program calculates other various ORF statistics, combining the BLAST alignments with the predicted ORFs in the transcript sequences. In essence, the program determines which alignment regions on query fall in range of transcript's ORFs/largest ORF. This step may take a few minutes, run the cell.
 
 ```
 #calculate ORF overlap statistics
@@ -232,4 +232,322 @@ cov50_ranges["qranges_in_largest_ORF"] = cov50_ranges.apply(lambda x: [any(z) fo
 cov50_ranges["qstarts_sorted_values"] = cov50_ranges["qstarts"].apply(lambda x: sort_with_order(x, make_equal=False)[0])
 cov50_ranges["qstarts_sorted_order"] = cov50_ranges["qstarts"].apply(lambda x: sort_with_order(x, make_equal=False)[1])
 cov50_ranges["qstarts_sorted_order_sequential"] = cov50_ranges["qstarts"].apply(lambda x: sort_with_order(x, make_sequential=True)[1])#true order of duplicate is lost
+```
+
+# Step 12 - Initialisation of transcript plotting
+
+Transcript plotting algorithm revolves around maximising the space occupied by transcripts on each plotting track i.e. how to most optimally pack the transcripts into each row of a plot, to occupy maximal amount of space on the track, and minimize the number of tracks needed to plot all the transcripts. In other words, all transcripts cannot be fit into a single lane as they have overlapping ranges. Which combination of transcripts should be plotted first, before creating a separate lane for the rest of the transcripts? Here, the program determines, for each transcript, which other transcripts it overlaps with, and for which transcript pairs there is no overlap. Run the cell.
+
+```
+cov50_ranges_ = cov50_ranges.sort_values(by="start").reset_index(drop=True)
+cov50_ranges_["TrOverlaps"] = ""
+cov50_ranges_["TrSeparate"] = ""
+
+for ii, ri in cov50_ranges_.iterrows():
+    overlaps_with = []
+    start = cov50_ranges_["start"][ii]
+    end = cov50_ranges_["end"][ii]
+    for ij, rj in cov50_ranges_.iterrows():
+        if (end > cov50_ranges_["start"][ij] and end > cov50_ranges_["end"][ij] and start > cov50_ranges_["start"][ij] and start > cov50_ranges_["end"][ij]) or (end < cov50_ranges_["start"][ij] and end < cov50_ranges_["end"][ij] and start < cov50_ranges_["start"][ij] and start < cov50_ranges_["end"][ij]):
+            overlaps_with.append(cov50_ranges_["qseqid"][ij])
+    overlaps_with_ = [x for x in cov50_ranges_["qseqid"].tolist() if x not in overlaps_with]
+    overlaps_with_ = [x for x in overlaps_with_ if x not in [cov50_ranges_["qseqid"][ii]]]
+    cov50_ranges_["TrOverlaps"][ii] = overlaps_with_
+    cov50_ranges_["TrSeparate"][ii] = overlaps_with
+```
+
+Following on, a minor calculation of number of overlapping and non overlapping transcripts. Run the cell.
+
+```
+cov50_ranges_["OverlapNum"] = cov50_ranges_["TrOverlaps"].apply(lambda x: len(x))
+cov50_ranges_["SeparateNum"] = cov50_ranges_["TrSeparate"].apply(lambda x: len(x))
+```
+
+Next cell creates a backup copy of the dataframe, in case the user wants to re-run the steps ahead. The dataframe will irreversably mutate in the future steps, so backup is useful. Run the cell and the next one ahead.
+
+```
+cov50_ranges_bu = cov50_ranges_.copy()
+```
+
+```
+cov50_ranges_ =  cov50_ranges_bu.copy()
+cov50_ranges_["NumExon"] = cov50_ranges_["srange"].apply(lambda x: len(x)/2)
+cov50_ranges_["index"] = cov50_ranges_.index
+```
+
+# Step 13 - Algorithm for establishing transcript arrangement on plotting tracks
+
+After plotting each track, it must recalculate overlapping/non-overlapping transcripts.
+
+```
+BATCH_SIZE = 40 #larger batches take exponentially longer to process, but produce more compact plot
+lrRNAseq_plot_df = pd.DataFrame()
+cov50_ranges_bu = pd.DataFrame()
+
+ranges = []
+for iii in range(0,cov50.drop_duplicates("qseqid").shape[0],BATCH_SIZE):
+    ranges.append(iii)
+ranges.append(cov50.drop_duplicates("qseqid").shape[0])
+
+for iii in range(len(ranges)-1):
+    print(iii)
+    cov50_ranges_ = cov50_ranges.sort_values(by="start").reset_index(drop=True)[ranges[iii]:ranges[iii+1]]
+    cov50_ranges_["TrOverlaps"] = ""
+    cov50_ranges_["TrSeparate"] = ""
+    
+    for ii, ri in cov50_ranges_.iterrows():
+        overlaps_with = []
+        start = cov50_ranges_["start"][ii]
+        end = cov50_ranges_["end"][ii]
+        for ij, rj in cov50_ranges_.iterrows():
+            if (end > cov50_ranges_["start"][ij] and end > cov50_ranges_["end"][ij] and start > cov50_ranges_["start"][ij] and start > cov50_ranges_["end"][ij]) or (end < cov50_ranges_["start"][ij] and end < cov50_ranges_["end"][ij] and start < cov50_ranges_["start"][ij] and start < cov50_ranges_["end"][ij]):
+                overlaps_with.append(cov50_ranges_["qseqid"][ij])
+        overlaps_with_ = [x for x in cov50_ranges_["qseqid"].tolist() if x not in overlaps_with]
+        #overlaps_with_ = list(set(cov50_ranges_["qseqid"].tolist())-set(overlaps_with))
+        overlaps_with_ = [x for x in overlaps_with_ if x not in [cov50_ranges_["qseqid"][ii]]]
+        cov50_ranges_["TrOverlaps"][ii] = overlaps_with_
+        cov50_ranges_["TrSeparate"][ii] = overlaps_with
+    
+    cov50_ranges_["OverlapNum"] = cov50_ranges_["TrOverlaps"].apply(lambda x: len(x))
+    cov50_ranges_["SeparateNum"] = cov50_ranges_["TrSeparate"].apply(lambda x: len(x))
+    
+    if iii==0:
+        cov50_ranges_bu = cov50_ranges_.copy()
+    else:
+        cov50_ranges_bu = pd.concat([cov50_ranges_bu, cov50_ranges_])
+        cov50_ranges_bu = cov50_ranges_bu.reset_index(drop=True)
+    
+    cov50_ranges_["NumExon"] = cov50_ranges_["srange"].apply(lambda x: len(x)/2)
+    cov50_ranges_["index"] = cov50_ranges_.index
+    
+    from operator import itemgetter
+    
+    def visit(TpM, chain, ii, chains,stop,chain_bu):
+        for z in range(len(TpM)):        
+            if stop == 0 and TpM[ii][z] == 1 and max(chain[:])<z:
+                chain_bu = chain[:]
+                chain.append(z)
+                if sum(TpM[z]) > 0:
+                    visit(TpM, chain, z, chains,stop,chain_bu)
+                else:
+                    chains.append(chain[:])
+                    chain=chain_bu[:]
+    
+    
+    #cov50_ranges_.sort_values(by="TrLen", ascending=False, inplace=True)
+    cov50_ranges_.sort_values(by="TrLen", ascending=False)
+    
+    mut_cov50_ranges = cov50_ranges_.copy()
+    TrsLeft = mut_cov50_ranges.index.tolist()
+    
+    final_coord_list = []
+    final_coord_members = []
+    final_coord_groups = []
+    final_chain_members = []
+    final_chain_ranges = []
+    final_group_lengths = []
+    saveTpM_list = []
+    for idx, r in mut_cov50_ranges.iterrows():
+        if idx in TrsLeft:
+            TrPartners = mut_cov50_ranges[mut_cov50_ranges["index"] == idx]["TrSeparate"].values[0]
+            #print(len(TrPartners))
+            if len(TrPartners) > 0:
+                TpM = [[0]*len(TrPartners) for _ in range(len(TrPartners))]
+                for trp in TrPartners:
+                    #print(trp)
+                    TpPartners = mut_cov50_ranges[mut_cov50_ranges["qseqid"]==trp]["TrSeparate"].values[0]
+                    TrTpPartners = [x for x in TrPartners if x in TpPartners]
+                    # print(mut_cov50_ranges["qseqid"][idx])
+                    # print("idx", idx)
+                    # print(TrPartners)
+                    # print(TpPartners)
+                    # print(len(TpPartners))
+                    # print(TrTpPartners)
+                    # print(len(TrTpPartners))
+                    for trtpp in TrTpPartners:
+                        if TrPartners.index(trp)<TrPartners.index(trtpp):
+                            TpM[TrPartners.index(trp)][TrPartners.index(trtpp)] = 1
+    
+                if len(TpM)>1:
+                    saveTpM_list.append(TpM)
+                if sum([x for i in TpM for x in i]) == 0:
+                    
+                    total_lengths = []
+                    
+                    for tr in TrPartners:
+                        total_length = mut_cov50_ranges[mut_cov50_ranges["qseqid"] == tr]["TrLen"].tolist()[0]
+                        total_lengths.append(total_length)
+                    
+                    index_max = max(range(len(total_lengths)), key=total_lengths.__getitem__)
+                    
+                    best_trs_df = pd.concat([mut_cov50_ranges[mut_cov50_ranges["index"] == idx], mut_cov50_ranges[mut_cov50_ranges["qseqid"] == TrPartners[index_max]]])
+                    best_trs_df = best_trs_df.sort_values(by="start")
+                    coord_list = best_trs_df["srange"].tolist()
+                    coord_list_ = [x for l in coord_list for x in l]
+                    coord_members = len(coord_list_)/2
+                    coord_groups = best_trs_df["NumExon"].tolist()
+                    
+                    final_coord_list.append(coord_list_)
+                    final_coord_members.append(coord_members)
+                    final_chain_members.append(best_trs_df["qseqid"].tolist())
+                    final_coord_groups.append(coord_groups)
+                    final_chain_ranges.append(best_trs_df["TrRange"].tolist())
+                    final_group_lengths.append(best_trs_df["TrLen"].sum())
+                    
+                    trs_to_remove = best_trs_df.index.tolist()
+                    TrsLeft = [x for x in TrsLeft if x not in trs_to_remove]
+                    
+                    cov50_ranges_.drop(trs_to_remove, inplace=True)
+                    
+                    for ii, ri in cov50_ranges_.iterrows():
+                        overlaps_with = []
+                        start = cov50_ranges_["start"][ii]
+                        end = cov50_ranges_["end"][ii]
+                        for ij, rj in cov50_ranges_.iterrows():
+                            if (end > cov50_ranges_["start"][ij] and end > cov50_ranges_["end"][ij] and start > cov50_ranges_["start"][ij] and start > cov50_ranges_["end"][ij]) or (end < cov50_ranges_["start"][ij] and end < cov50_ranges_["end"][ij] and start < cov50_ranges_["start"][ij] and start < cov50_ranges_["end"][ij]):
+                                overlaps_with.append(cov50_ranges_["qseqid"][ij])
+                        overlaps_with_ = [x for x in cov50_ranges_["qseqid"].tolist() if x not in overlaps_with]
+                        #overlaps_with_ = list(set(cov50_ranges_["qseqid"].tolist())-set(overlaps_with))
+                        overlaps_with_ = [x for x in overlaps_with_ if x not in [cov50_ranges_["qseqid"][ii]]]
+                        cov50_ranges_["TrOverlaps"][ii] = overlaps_with_
+                        cov50_ranges_["TrSeparate"][ii] = overlaps_with
+                    
+                    cov50_ranges_["OverlapNum"] = cov50_ranges_["TrOverlaps"].apply(lambda x: len(x))
+                    cov50_ranges_["SeparateNum"] = cov50_ranges_["TrSeparate"].apply(lambda x: len(x))
+                
+                    mut_cov50_ranges = cov50_ranges_.copy()
+                    
+                else:
+                    chains = []
+                    stop = 0
+                    for i in range(len(TpM)):
+                        for j in range(len(TpM)):
+                            if TpM[i][j] == 1 and stop==0:
+                                chain = [i,j] #0,7
+                                chain_bkup = chain[:]
+                                chains.append(chain[:])
+                                if sum(TpM[j]) > 0:
+                                    visit(TpM, chain, j, chains, stop, chain_bkup)
+                    
+                    correction = []
+                    for elem in chains:
+                        if sum(TpM[elem[-1]])==0 and sum(TpM[elem[-2]])==0:
+                            correction.append(elem)
+                    
+                    chains = [x for x in chains if x not in correction]
+                    new_chains = []
+                    for elem in chains:
+                        if elem not in new_chains:
+                            new_chains.append(elem)
+                    chains = new_chains
+                   # print(chains)
+                    total_lengths = []
+                    
+                    for chain in chains:
+                        total_length = 0
+                        for i in chain:
+                            total_length += mut_cov50_ranges[mut_cov50_ranges["qseqid"] == TrPartners[i]]["TrLen"].tolist()[0]
+                        total_lengths.append(total_length)
+                    #print(total_lengths)
+                    index_max = max(range(len(total_lengths)), key=total_lengths.__getitem__)
+                
+                    best_chain = chains[index_max]
+                
+                    best_trs = itemgetter(*best_chain)(TrPartners)
+                    #print("besttrs1", best_trs)
+                    #print("idx", idx)
+                    best_trs_df = pd.concat([mut_cov50_ranges[mut_cov50_ranges["index"] == idx], mut_cov50_ranges[mut_cov50_ranges["qseqid"].isin(best_trs)]])
+                    #print("besttrs2", best_trs_df)
+                    best_trs_df = best_trs_df.sort_values(by="start")
+                    coord_list = best_trs_df["srange"].tolist()
+                    coord_list_ = [x for l in coord_list for x in l]
+                    coord_members = len(coord_list_)/2
+                    coord_groups = best_trs_df["NumExon"].tolist()
+                    
+                    final_coord_list.append(coord_list_)
+                    final_coord_members.append(coord_members)
+                    final_chain_members.append(best_trs_df["qseqid"].tolist())
+                    final_coord_groups.append(coord_groups)
+                    final_chain_ranges.append(best_trs_df["TrRange"].tolist())
+                    final_group_lengths.append(best_trs_df["TrLen"].sum())
+                
+                    trs_to_remove = best_trs_df.index.tolist()
+                    TrsLeft = [x for x in TrsLeft if x not in trs_to_remove]
+                    
+                    cov50_ranges_.drop(trs_to_remove, inplace=True)
+                    
+                    for ii, ri in cov50_ranges_.iterrows():
+                        overlaps_with = []
+                        start = cov50_ranges_["start"][ii]
+                        end = cov50_ranges_["end"][ii]
+                        for ij, rj in cov50_ranges_.iterrows():
+                            if (end > cov50_ranges_["start"][ij] and end > cov50_ranges_["end"][ij] and start > cov50_ranges_["start"][ij] and start > cov50_ranges_["end"][ij]) or (end < cov50_ranges_["start"][ij] and end < cov50_ranges_["end"][ij] and start < cov50_ranges_["start"][ij] and start < cov50_ranges_["end"][ij]):
+                                overlaps_with.append(cov50_ranges_["qseqid"][ij])
+                        overlaps_with_ = [x for x in cov50_ranges_["qseqid"].tolist() if x not in overlaps_with]
+                        #overlaps_with_ = list(set(cov50_ranges_["qseqid"].tolist())-set(overlaps_with))
+                        overlaps_with_ = [x for x in overlaps_with_ if x not in [cov50_ranges_["qseqid"][ii]]]
+                        cov50_ranges_["TrOverlaps"][ii] = overlaps_with_
+                        cov50_ranges_["TrSeparate"][ii] = overlaps_with
+                    
+                    cov50_ranges_["OverlapNum"] = cov50_ranges_["TrOverlaps"].apply(lambda x: len(x))
+                    cov50_ranges_["SeparateNum"] = cov50_ranges_["TrSeparate"].apply(lambda x: len(x))
+                
+                    mut_cov50_ranges = cov50_ranges_.copy()
+            else:
+                coord_list_ = mut_cov50_ranges[mut_cov50_ranges["index"] == idx]["srange"].values[0]
+                coord_members = len(coord_list_)/2            
+                coord_groups = mut_cov50_ranges[mut_cov50_ranges["index"] == idx]["NumExon"].values[0]
+                
+                final_coord_list.append(coord_list_)
+                final_coord_members.append(coord_members)
+                final_chain_members.append(mut_cov50_ranges[mut_cov50_ranges["index"] == idx]["qseqid"].values[0])
+                final_coord_groups.append(coord_groups)
+                final_chain_ranges.append(mut_cov50_ranges[mut_cov50_ranges["index"] == idx]["TrRange"].values[0])
+                final_group_lengths.append(mut_cov50_ranges[mut_cov50_ranges["index"] == idx]["TrLen"].values[0])
+                
+                trs_to_remove = [idx]
+                TrsLeft = [x for x in TrsLeft if x not in trs_to_remove]
+                
+                cov50_ranges_.drop(trs_to_remove, inplace=True)
+                
+                for ii, ri in cov50_ranges_.iterrows():
+                    overlaps_with = []
+                    start = cov50_ranges_["start"][ii]
+                    end = cov50_ranges_["end"][ii]
+                    for ij, rj in cov50_ranges_.iterrows():
+                        if (end > cov50_ranges_["start"][ij] and end > cov50_ranges_["end"][ij] and start > cov50_ranges_["start"][ij] and start > cov50_ranges_["end"][ij]) or (end < cov50_ranges_["start"][ij] and end < cov50_ranges_["end"][ij] and start < cov50_ranges_["start"][ij] and start < cov50_ranges_["end"][ij]):
+                            overlaps_with.append(cov50_ranges_["qseqid"][ij])
+                    overlaps_with_ = [x for x in cov50_ranges_["qseqid"].tolist() if x not in overlaps_with]
+                    #overlaps_with_ = list(set(cov50_ranges_["qseqid"].tolist())-set(overlaps_with))
+                    overlaps_with_ = [x for x in overlaps_with_ if x not in [cov50_ranges_["qseqid"][ii]]]
+                    cov50_ranges_["TrOverlaps"][ii] = overlaps_with_
+                    cov50_ranges_["TrSeparate"][ii] = overlaps_with
+                
+                cov50_ranges_["OverlapNum"] = cov50_ranges_["TrOverlaps"].apply(lambda x: len(x))
+                cov50_ranges_["SeparateNum"] = cov50_ranges_["TrSeparate"].apply(lambda x: len(x))
+            
+                mut_cov50_ranges = cov50_ranges_.copy()
+    
+    for idx, row in mut_cov50_ranges.iterrows():
+        coord_list_ = mut_cov50_ranges["srange"][idx]
+        coord_members = len(coord_list_)/2            
+        coord_groups = mut_cov50_ranges["NumExon"][idx]
+        
+        final_coord_list.append(coord_list_)
+        final_coord_members.append(coord_members)
+        final_chain_members.append(mut_cov50_ranges["qseqid"][idx])
+        final_coord_groups.append(coord_groups)
+        final_chain_ranges.append(mut_cov50_ranges["TrRange"][idx])
+        final_group_lengths.append(mut_cov50_ranges["TrLen"][idx])
+    
+    lrRNAseq_plot_df_pre = pd.DataFrame()
+    lrRNAseq_plot_df_pre["coords"] = final_coord_list
+    lrRNAseq_plot_df_pre["total_exons"] = final_coord_members
+    lrRNAseq_plot_df_pre["TrNames"] = final_chain_members
+    lrRNAseq_plot_df_pre["exons_per_tr"] = final_coord_groups
+    lrRNAseq_plot_df_pre["range_per_tr"] = final_chain_ranges
+    lrRNAseq_plot_df_pre["Total_aln_len"] = final_group_lengths
+    lrRNAseq_plot_df = pd.concat([lrRNAseq_plot_df, lrRNAseq_plot_df_pre])
+    lrRNAseq_plot_df = lrRNAseq_plot_df.sort_values("Total_aln_len",ascending=False)
+    lrRNAseq_plot_df = lrRNAseq_plot_df.reset_index(drop=True)
 ```
