@@ -899,7 +899,7 @@ for idx in range(nrows):
     axes[idx].set_yticklabels([])
 ```
 
-![Screenshot](./images/example_plot.png)
+![Screenshot](./images/lrRNAseq_GAST_plot_example.png)
 
 If you would like to extract/investigate certain transcripts on the plot, you can query lrRNAseq_plot_df dataframe. This requires lightweight knowledge of Python's Pandas dataframes. Generally, you can extract these transcripts by querying a specified range of coordinates into which the transcript falls. For example, in the image above, there are 6-9 transcripts that are visually likely to be aligned to a gene in the genomic range of 25,000 - 45,000 bp. Each row in the lrRNAseq_plot_df dataframe represents a row/track in the plot e.g. the uppermost track will be the first row of the dataframe, whilst the lowermost will be the last row of dataframe. At the moment, there is no way to query the transcript by its coordinate range, this is work in progress. The easiest way to obtain your transcript is via index in the lrRNAseq_plot_df, which will equal its row on the plot counting from the top to bottom. For example, the transcripts of interest at the genomic range of 25k-45k are in the rows 20-23 on the plot, so we can fetch them in the following way:
 
