@@ -9,11 +9,11 @@ The **bioinformatic_functions.ipynb** is required to be imported in the main fil
 
 The rest of the files serve as example data to try out.
 
-[Full documentation](Docs/overview.md)
-
 # Requirements
 - Jupyter Notebook or Jupyter Lab
 - Python libraries: Pandas, Matplotlib, Numpy, Regex, Biopython, OS, ast, operator
 - seqtk installed via bioconda i.e. conda install bioconda::seqtk
+[Full documentation](Docs/overview.md)
+
 
 <br />
