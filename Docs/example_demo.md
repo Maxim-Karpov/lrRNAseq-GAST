@@ -80,4 +80,84 @@ TRANSCRIPT_TO_GENOME_BLAST_PATH = "/home/maxim/Projects/BACs/publication/lrRNAse
 all_blast = read_blast(TRANSCRIPT_TO_GENOME_BLAST_PATH)
 ```
 
-Then run the cell. This parses the BLAST output to a Pandas dataframe using the read_blast() function. The 
+Then run the cell. This parses the BLAST output to a Pandas dataframe using the read_blast() function. The all_blast dataframe contains the BLAST output with some additional columns - sorientation (orientation of subject), q_mid (alignment midpoint on query), s_mid (alignment midpoint on subject).
+
+![Screenshot](./images/all_blast.png)
+
+# Step 6 - Calculate transcript filtration variables
+
+In this step, for each transcript, maximal distance between two alignment regions (maximal intron gap), and transcript coverage (how much of the transcript was covered by all of its alignments to genome), will be calculated for future filtering purposes. Run the cell.
+
+```
+grouped_blast = all_blast.groupby("qseqid")
+
+all_blast["Tr_coverage"] = 0
+cov_dict = {}
+dist_dict = {}
+for tr, temp_df in grouped_blast:
+    qlen = temp_df["qlen"].max()
+    temp_df = temp_df.sort_values(by="qstart").reset_index(drop=True)
+    q_overlaps, q_cov = calc_overlaps(temp_df, "q") 
+    q_overlaps["Length"] = q_overlaps["Right"] - q_overlaps["Left"] 
+    coverage = 100 / qlen * q_overlaps["Length"].sum()  
+    cov_dict[tr] = coverage
+
+    temp_df = temp_df.sort_values(by="sstart").reset_index(drop=True)
+    q_overlaps, q_cov = calc_overlaps(temp_df, "s") 
+    right = q_overlaps["Right"].tolist()
+    left = q_overlaps["Left"].tolist()
+    distances = []
+    if len(right)>1:
+        for i in range(len(right)-1):
+            distances.append(left[i+1]-right[i])
+    else:
+        distances = [0]
+    dist_dict[tr] = distances
+
+# all_blast.loc[all_blast["qseqid"] == tr, "Tr_coverage"] = coverage
+all_blast["Tr_coverage"] = all_blast["qseqid"].apply(lambda x: cov_dict[x])
+all_blast["s_distances"] = all_blast["qseqid"].apply(lambda x: dist_dict[x])
+all_blast["max_distance"] = all_blast["s_distances"].apply(lambda x: max(x))
+all_blast["srange"] = all_blast.apply(lambda x: [x.sstart, x.send], axis = 1)
+all_blast["qrange"] = all_blast.apply(lambda x: [x.qstart, x.qend], axis = 1)
+all_blast["counts"] = all_blast.groupby("qseqid")["sseqid"].transform("count")
+```
+
+# Step 7 - Sort dataframe by subject start
+
+Self explanatory. Run the cell.
+
+```
+cov50=all_blast.sort_values("sstart").reset_index(drop=True)
+```
+
+# Step 8 - Filter by maximal intron length and minimal transcript coverage
+
+In this example, if the space between two neighbouring alignments exceeds 20000 bp, the transcript will be filtered out. Run the cell.
+
+```
+MAX_INTRON_LENGTH = 20000
+cov50 = cov50[cov50["max_distance"]<MAX_INTRON_LENGTH]
+```
+
+![Screenshot](./images/large_intron_filter.png)
+
+Furthermore, if the transcript is insufficiently covered by alignments (in this example, if less than 25%), it is filtered out. Program accounts for alignments that overlap. Run the cell.
+
+```
+MIN_COVERAGE = 25
+cov50 = cov50[cov50["Tr_coverage"]>MIN_COVERAGE]
+```
+
+![Screenshot](./images/coverage_filter.png)
+
+This step significantly reduces the number of false positives. Feel free to tweak MIN_INTRON_LENGTH and MIN_COVERAGE variables, based on your knowledge of organism biology.
+
+Lastly, save the list of the transcript IDs remaining after filtration for further processing. Specify the save path in the FILTERED_TRANCRIPT_IDS variable.
+
+```
+FILTERED_TRANCRIPT_IDS = "./aligned_lrRNAseq_cov25_filtered.txt"
+write_list(cov50.drop_duplicates("qseqid")["qseqid"].tolist(), FILTERED_TRANCRIPT_IDS)
+```
+
+# Step 9 - 
