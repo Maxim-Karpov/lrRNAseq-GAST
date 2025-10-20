@@ -170,10 +170,66 @@ FILTERED_TRANSCRIPTS_FASTA_PATH = "filtered_transcripts.fasta"
 os.system(f"seqtk subseq {ALL_TRANSCRIPTS_PATH} {FILTERED_TRANSCRIPT_IDS} > {FILTERED_TRANSCRIPTS_PATH}")
 ```
 
-Import these transcripts into the notebook environment. If your transcripts still contain barcode sequences at either end (the example data contains barcodes of length 39 bp at either end), you need to remove the barcodes by specifying their length into the BARCODE_LEN variable. The program then imports these transcripts and calclates various statistics revolving around their Open Reading Frames.
+Import these transcripts into the notebook environment. If your transcripts still contain barcode sequences at either end (the example data contains barcodes of length 39 bp at either end), you need to remove the barcodes by specifying their length into the BARCODE_LEN variable. The program then imports these transcripts and calclates various statistics (find_tr_ORF_stats() function). Run the cell.
 
 ```
 BACRODE_LEN = 39
 cov50_fasta = parse_fasta(FILTERED_TRANSCRIPT_FASTA_PATH,rm_barcode=BARCODE_LEN)[0]
 all_stats = find_tr_ORF_stats(cov50_fasta["seq"].tolist(),cov50_fasta["id"].tolist(),tissue=True, include_seq=True)
+```
+
+The resulting dataframe "all_stats" is large and contains information about polyA length/position, properties of the sequence (e.g. GC%, number of stop codons, Open Reading Frame coordinates, translated protein sequences from the ORFs etc.). If you would like to view the dataframe, disable the display limit for columns in Pandas by running:
+
+```
+pd.set_option('display.max_columns', None)
+```
+
+Then run the cell with just the dataframe name.
+
+# Step 10 - Import FASTA of the genomic region of interest
+
+Set path to the genomic sequence in the GENOME_FASTA_PATH variable. Run the cell.
+
+```
+GENOME_FASTA_PATH = "./Ef318A10.fst"
+my_seq = "".join([line.strip() for line in open(GENOME_FASTA_PATH) if not line.startswith(">")])
+seq_len = len(my_seq)
+```
+
+# Step 11 - Calculate further ORF statistics
+
+
+
+```
+#calculate ORF overlap statistics
+all_s = all_stats[["id", "ORF_coords", "all_ORF_coords", "ORF_lengths", "num_ORFs_found"]]
+all_s.rename(columns={"id":"qseqid"}, inplace=True)
+
+cov50_ranges = cov50.groupby("qseqid").agg({"srange": "sum", "qrange": "sum"})
+cov50_ranges = cov50_ranges.reset_index()
+
+cov50_ranges["start"] = cov50_ranges["srange"].apply(lambda x: min(x))
+cov50_ranges["end"] = cov50_ranges["srange"].apply(lambda x: max(x))
+
+cov50_ranges["qstarts"] = cov50_ranges["qrange"].apply(lambda x: x[::2])
+cov50_ranges["TrRange"] = cov50_ranges.apply(lambda x: [x["start"], x["end"]], axis=1)
+cov50_ranges["TrLen"] = cov50_ranges["end"] - cov50_ranges["start"]
+
+cov50_ranges = cov50_ranges.merge(right=all_s, on="qseqid",how="inner")
+cov50_ranges["left_ORF_coords"] = cov50_ranges["all_ORF_coords"].apply(lambda x: [i[0] for i in x])
+cov50_ranges["right_ORF_coords"] = cov50_ranges["all_ORF_coords"].apply(lambda x: [i[1] for i in x])
+
+cov50_ranges["overlap_ORF_coords"] = cov50_ranges.apply(lambda x: calc_overlaps(pd.DataFrame({"Left":x.left_ORF_coords,"Right":x.right_ORF_coords}),by="LeftRight")[0]["Coords"].tolist(), axis=1)
+
+cov50_ranges["qranges"] = cov50_ranges["qrange"].apply(lambda x: [[[x[::2], x[1::2]][0][i], [x[::2], x[1::2]][1][i]] for i in range(len([x[::2], x[1::2]][0]))])
+
+cov50_ranges["in_ORF_matrix"] = cov50_ranges.apply(lambda x: [bool(list(pd.RangeIndex(i[0],i[1]).intersection(pd.RangeIndex(b[0],b[1])))) for i in x.qranges for b in x.overlap_ORF_coords], axis=1)
+cov50_ranges["in_ORF_matrix_largest"] = cov50_ranges.apply(lambda x: [bool(list(pd.RangeIndex(i[0],i[1]).intersection(pd.RangeIndex(b[0],b[1])))) for i in x.qranges for b in [x.ORF_coords]], axis=1)
+
+cov50_ranges["qranges_in_ORF"] = cov50_ranges.apply(lambda x: [any(z) for z in [[bool(list(pd.RangeIndex(i[0],i[1]).intersection(pd.RangeIndex(b[0],b[1])))) for i in x.qranges for b in x.overlap_ORF_coords][v:v+len(x.overlap_ORF_coords)] for v in range(0,len(x.in_ORF_matrix),len(x.overlap_ORF_coords))]], axis=1)
+cov50_ranges["qranges_in_largest_ORF"] = cov50_ranges.apply(lambda x: [any(z) for z in [[bool(list(pd.RangeIndex(i[0],i[1]).intersection(pd.RangeIndex(b[0],b[1])))) for i in x.qranges for b in [x.ORF_coords]][v:v+len([x.ORF_coords])] for v in range(0,len(x.in_ORF_matrix_largest),len([x.ORF_coords]))]], axis=1)
+
+cov50_ranges["qstarts_sorted_values"] = cov50_ranges["qstarts"].apply(lambda x: sort_with_order(x, make_equal=False)[0])
+cov50_ranges["qstarts_sorted_order"] = cov50_ranges["qstarts"].apply(lambda x: sort_with_order(x, make_equal=False)[1])
+cov50_ranges["qstarts_sorted_order_sequential"] = cov50_ranges["qstarts"].apply(lambda x: sort_with_order(x, make_sequential=True)[1])#true order of duplicate is lost
 ```
