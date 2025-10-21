@@ -46,7 +46,7 @@ warnings.filterwarnings("ignore")
 %run "./bioinformatic_functions.ipynb"
 ```
 
-# Step 4 - Align long read RNAseq transcripts to a genomic region
+## Step 4 - Align long read RNAseq transcripts to a genomic region
 
 Install BLAST in your shell environment:
 
@@ -73,7 +73,7 @@ Important: lrRNAseq-GAST assumes you will use -outfmt '6 qseqid sseqid slen qlen
 
 -word_size 8, -evalue 1e-5 may be managable to run to the end.
 
-# Step 5 - Import BLAST alignments to your notebook
+## Step 5 - Import BLAST alignments to your notebook
 
 In the following notebook cell, provide path to your BLAST output. For example:
 
@@ -86,7 +86,7 @@ Then run the cell. This parses the BLAST output to a Pandas dataframe using the 
 
 ![Screenshot](./images/all_blast.png)
 
-# Step 6 - Calculate transcript filtration variables
+## Step 6 - Calculate transcript filtration variables
 
 In this step, for each transcript, maximal distance between two alignment regions (maximal intron gap), and transcript coverage (how much of the transcript was covered by all of its alignments to genome), will be calculated for future filtering purposes. Run the cell.
 
@@ -125,7 +125,7 @@ all_blast["qrange"] = all_blast.apply(lambda x: [x.qstart, x.qend], axis = 1)
 all_blast["counts"] = all_blast.groupby("qseqid")["sseqid"].transform("count")
 ```
 
-# Step 7 - Sort dataframe by subject start
+## Step 7 - Sort dataframe by subject start
 
 Self explanatory, performed for the sake of further processing. Run the cell.
 
@@ -133,7 +133,7 @@ Self explanatory, performed for the sake of further processing. Run the cell.
 cov50=all_blast.sort_values("sstart").reset_index(drop=True)
 ```
 
-# Step 8 - Filter by maximal intron length and minimal transcript coverage
+## Step 8 - Filter by maximal intron length and minimal transcript coverage
 
 In this example, if the space between two neighbouring alignments exceeds 20000 bp, the transcript will be filtered out. Run the cell.
 
@@ -162,7 +162,7 @@ FILTERED_TRANCRIPT_IDS = "./aligned_lrRNAseq_cov25_filtered.txt"
 write_list(cov50.drop_duplicates("qseqid")["qseqid"].tolist(), FILTERED_TRANCRIPT_IDS)
 ```
 
-# Step 9 - Extract the transcripts that passed the filtration and import into the notebook
+## Step 9 - Extract the transcripts that passed the filtration and import into the notebook
 
 Step produces a FASTA file including only the transcripts that passed the filtration procedure. Seqtk subseq extracts transcripts by transcript ID from the main lrRNAseq fasta. Enter path to the initial lrRNAseq file into the ALL_TRANSCRIPTS_PATH variable and the name of the fasta file that will contain post-filtered transcripts into the FILTERED_TRANSCRIPTS_FASTA_PATH variable. Run the cell.
 
@@ -188,7 +188,7 @@ pd.set_option('display.max_columns', None)
 
 Then run the cell with just the dataframe name.
 
-# Step 10 - Import FASTA of the genomic region of interest
+## Step 10 - Import FASTA of the genomic region of interest
 
 Set path to the genomic sequence in the GENOME_FASTA_PATH variable. Run the cell.
 
@@ -198,7 +198,7 @@ my_seq = "".join([line.strip() for line in open(GENOME_FASTA_PATH) if not line.s
 seq_len = len(my_seq)
 ```
 
-# Step 11 - Calculate further ORF statistics*
+## Step 11 - Calculate further ORF statistics*
 
 In this step, the program calculates other various ORF statistics, combining the BLAST alignments with the predicted ORFs in the transcript sequences. In essence, the program determines which alignment regions on query fall in range of transcript's ORFs/largest ORF. The alignments falling into any ORF will be coloured in red, whilst the ones falling into the largest ORF, will be yellow on the final plot. This step may take a few minutes, run the cell.
 
@@ -236,7 +236,7 @@ cov50_ranges["qstarts_sorted_order"] = cov50_ranges["qstarts"].apply(lambda x: s
 cov50_ranges["qstarts_sorted_order_sequential"] = cov50_ranges["qstarts"].apply(lambda x: sort_with_order(x, make_sequential=True)[1])#true order of duplicate is lost
 ```
 
-# Step 12 - Initialisation of transcript plotting
+## Step 12 - Initialisation of transcript plotting
 
 Transcript plotting algorithm revolves around maximising the space occupied by transcripts on each plotting track i.e. how to most optimally pack the transcripts into each row of a plot, to occupy maximal amount of space on the track, and minimize the number of tracks needed to plot all the transcripts. In other words, all transcripts cannot be fit into a single lane as they have overlapping ranges. Which combination of transcripts should be plotted first, before creating a separate lane for the rest of the transcripts? Here, the program determines, for each transcript, which other transcripts it overlaps with, and for which transcript pairs there is no overlap. Run the cell.
 
@@ -277,7 +277,7 @@ cov50_ranges_["NumExon"] = cov50_ranges_["srange"].apply(lambda x: len(x)/2)
 cov50_ranges_["index"] = cov50_ranges_.index
 ```
 
-# Step 13 - Algorithm for establishing transcript arrangement on plotting tracks*
+## Step 13 - Algorithm for establishing transcript arrangement on plotting tracks*
 
 You have a single variable to specify - BATCH_SIZE, which determines the number of transcripts the program will attempt to optimally plot at once. Beware that BATCH_SIZE scales exponentially with time, but higher BATCH_SIZE will produce more compact plot. After plotting each track, it must recalculate overlapping/non-overlapping transcripts. The details of the algorithm will be verbalised and visualised in future versions of the documentation.
 
@@ -562,7 +562,7 @@ cov50_ranges_["NumExon"] = cov50_ranges_["srange"].apply(lambda x: len(x)/2)
 cov50_ranges_["index"] = cov50_ranges_.index
 ```
 
-# Step 14 - Combining transcript plot dataframe with the BLAST dataframe
+## Step 14 - Combining transcript plot dataframe with the BLAST dataframe
 
 Combine transcript plot dataframe (lrRNAseq_plot_df) with the BLAST dataframe (cov50_ranges_) on transcript basis. Required for further processing. Run the cell.
 
@@ -633,7 +633,7 @@ lrRNAseq_plot_df["qstarts_sorted_order_sequential"] = lrRNAseq_plot_df["qstarts_
 lrRNAseq_plot_df["qstarts"] = lrRNAseq_plot_df["qstarts"].apply(lambda x: eval(x))
 ```
 
-# Step 15 - work in progress*
+## Step 15 - work in progress*
 
 The following 11 cells deal with processing the plotting dataframe to a format that is plottalbe, and introduce the exon synteny/collinearity feature. Some algorithms used in this section are somewhat complex and will be explained in future versions of the documentation. The user does not need to input anything in these cells, but to simply run them.
 
@@ -754,7 +754,7 @@ lrRNAseq_plot_df["syntenous_indexes_unwrapped"] = lrRNAseq_plot_df["syn_idxs_cor
 lrRNAseq_plot_df["syntenous_indexes_int_unwrapped"]  = lrRNAseq_plot_df["syntenous_indexes_unwrapped"].apply(lambda x: [int(i) for i in x])
 ```
 
-# Step 16 - Plot everything*
+## Step 16 - Plot everything*
 
 This is the final step, which produces the lrRNAseq-GAST plot. Run the cell. The image will pop up in the notebook. You can save the image by right clicking with the mouse whilst holding Ctrl on the keyboard. The majority of the plotted alignment regions will be false positives, but the real alignments of transcript exons onto their complementary genes will be obvious to the naked eye i.e. the introns will be short, exons compact and non-repetitive, multiple transcripts will be consistently supportive of the gene's existence. You can expect to see a lot less false positives, but retain the majority of the legitimate transcript alignments if you configure the filtration options e.g. set MAX_INTRON_LENGHT to 7000 and MIN_COVERAGE to 35. But you may miss out on certain rare genes which naturally have large exons; in the case of our example, we don't miss anything using these parameters, but remove 50%+ of the false positives.
 
