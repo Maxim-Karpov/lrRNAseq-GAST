@@ -7,6 +7,6 @@
 - Improved ease of extracting transcripts of interest from the plot - ability to extract transcripts based on genomic coordinate range.
 - Provide colour coding to the alignments based on alignment e-value, PID, or bitscore.
 
-## Implemented
+# Implemented
 
 - lrRNAseq-GAST 1.0.
