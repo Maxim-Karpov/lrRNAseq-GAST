@@ -6,6 +6,7 @@
 - Improved coverage filter - coverage filter which is based on just the coding regions.
 - Improved ease of extracting transcripts of interest from the plot - ability to extract transcripts based on genomic coordinate range.
 - Provide colour coding to the alignments based on alignment e-value, PID, or bitscore.
+- Filter by e-value.
 
 # Known bugs/design flaws
 
