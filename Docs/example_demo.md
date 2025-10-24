@@ -63,17 +63,19 @@ makeblastdb -in Ef318A10.fst -dbtype nucl -parse_seqids -out 318A10_db -title 31
 Align long read RNAseq transcripts to a genomic region using BLAST with alignment parameters of your choice. Example transcript file "all_transcripts.fasta" was supplied in the lrRNAseq-GAST repository.
 
 ```
-blastn -query /home/maxim/Projects/BACs/publication/lrRNAseq_GAST/all_transcripts.fasta -db 318A10_db -max_hsps 10000 -task blastn -word_size 4 -evalue 1e-2 -num_threads 10 -out lrRNAseq_to_Ef318A10.out -outfmt '6 qseqid sseqid slen qlen qstart qend sstart send length mismatch gapopen pident evalue bitscore'
+blastn -query /home/maxim/Projects/BACs/publication/lrRNAseq_GAST/all_transcripts.fasta -db 318A10_db -max_hsps 10000 -task blastn -word_size 4 -evalue 10 -num_threads 10 -out lrRNAseq_to_Ef318A10.out -outfmt '6 qseqid sseqid slen qlen qstart qend sstart send length mismatch gapopen pident evalue bitscore'
 ```
 
 Important: lrRNAseq-GAST assumes you will use -outfmt '6 qseqid sseqid slen qlen qstart qend sstart send length mismatch gapopen pident evalue bitscore' BLAST output format. 
 
 
--word_size 4, -evalue 1e-2 will yield highest sensitivity, and will detect very short exons, but may take unreasonably long to run, and produce many false positives. If such sensitivity is really desired, it is recommended to run BLAST for some managable period of time (e.g. 10 minutes), and interrupt the command; this should still work given your transcripts of interest in your lrRNAseq dataset are not rare / poorly expressed / of low abundance.
+-word_size 4, -evalue 10 will yield highest sensitivity, and will detect very short exons, but may take unreasonably long to run, and produce many false positives. If such sensitivity is really desired, it is recommended to run BLAST for some managable period of time (e.g. 10 minutes), and interrupt the command; this should still work given your transcripts of interest in your lrRNAseq dataset are not rare / poorly expressed / of low abundance. Note: evalue parameter affect BLAST running time but does affect memory usage (in our use cases, negligibly). 
 
--word_size 8, -evalue 1e-5 may be managable to run to the end.
+-word_size 8, may be managable to run to the end.
 
--word_size 12+, -evalue 1e-5 may be used for exploratory purposes, to find the transcripts that align well, which can then be extracted and re-BLASTed with higher sensitivity to obtain more accurate intron-exon junctions.
+-word_size 12+, may be used for exploratory purposes, to find the transcripts whose exons are long and invariable between individuals/species, thereby aligning well. These transcripts can then be extracted and re-BLASTed with higher sensitivity (lower word_size) to obtain more accurate intron-exon junctions.
+
+It is recommended to run high e-value (10) in all cases, then perform e-value filtering inside the jupyter-notebook (feature coming soon).
 
 ## Step 5 - Import BLAST alignments to your notebook
 
