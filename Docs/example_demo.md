@@ -73,6 +73,8 @@ Important: lrRNAseq-GAST assumes you will use -outfmt '6 qseqid sseqid slen qlen
 
 -word_size 8, -evalue 1e-5 may be managable to run to the end.
 
+-word_size 12+, -evalue 1e-5 may be used for exploratory purposes, to find the transcripts that align well, which can then be extracted and re-BLASTed with higher sensitivity to obtain more accurate intron-exon junctions.
+
 ## Step 5 - Import BLAST alignments to your notebook
 
 In the following notebook cell, provide path to your BLAST output. For example:
