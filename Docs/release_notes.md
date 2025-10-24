@@ -1,5 +1,6 @@
 # Planned features
 
+- Imporved intron filter - an intron filter which will not remove the entire transcript alignment from the track, but rather split the transcript alignment at points of exceeding intron length into two (or more) separate alignments. This could potentially empower filtering process, and would help visually recognise legitimate transcript alignments.
 - In-depth view of splice junctions and general magnification - you will be able to select a transcript of choice from the main figure generated, and inspect closer, where the transcript's exons aligned to the genome.
 - Visualisation of untranslated regions - similarly to exon visualisation, a different plot will be created displaying the location of 5' and 3' UTR alignments.
 - Raw lrRNAseq processing protocol - a Jupyter-Notebook with a custom lrRNAseq barcode deconvolution protocol with superior performance than mainstream methods (e.g. PacBio Lima). Further processing of lrRNAseq to remove sequences of poor quality (e.g. no polyA) and orient the sequences in forward direction.
