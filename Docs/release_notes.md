@@ -11,7 +11,7 @@
 # Known bugs/design flaws
 
 - Labelling of largest ORF/coding sequence may not be most accurate in the flanking exons.
-- Filtering by 
+- Optimal filtering protocol has not been determined yet. In case of finding difficult, highly variable, short exons, current filtering requires experimentation and understanding of biological sequences at hand as well as the software.
 
 # Implemented
 
