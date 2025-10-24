@@ -7,6 +7,11 @@
 - Improved ease of extracting transcripts of interest from the plot - ability to extract transcripts based on genomic coordinate range.
 - Provide colour coding to the alignments based on alignment e-value, PID, or bitscore.
 
+# Known bugs/design flaws
+
+- Labelling of largest ORF/coding sequence may not be most accurate in the flanking exons.
+- Filtering by 
+
 # Implemented
 
 - lrRNAseq-GAST 1.0.
