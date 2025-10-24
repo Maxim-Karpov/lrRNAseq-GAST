@@ -30,3 +30,5 @@ NO RESULT, TOO MUCH FILTERED.
 
 BAC Lr6F14 and wMT transcripts, initial 0.1 evalue, 20 coverage, and 5000 intron filter:
 ![Screenshot](./images/MT_to_6F14_e1_0.1evalue_5kb_10coverage_filter.png)
+
+Perfect. Here we've managed to filter out the unspecific alignments whilst retaining our exon alignments.
