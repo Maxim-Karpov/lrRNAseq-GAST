@@ -12,7 +12,7 @@ BAC Ef472C1
 ![Screenshot](./images/472C1_cov25_wORFs_wSynteny_wSpacing_wSplicing_normal_100batch.png)
 
 
-## Word_size 4, e-value 1, megablast, high permissiveness for alignment for finding short exons:
+## Word_size 4, e-value 1, high permissiveness for alignment for finding short exons:
 
 High permissiveness has the benefit of detecting short and variable exons, such as the exons 1 and 2 of wMT2 on the Lr6F14 BAC. The trouble is that high permissiveness causes many unspecific alignments, which reflect themselves in large transcript regions with many alignments that are outside of the largest ORF (red alignments).
 
@@ -27,3 +27,6 @@ BAC Lr6F14 and wMT transcripts, 20% coverage filter (incomplete alignments, wher
 
 BAC Lr6F14 and wMT transcripts, 20 coverage and 10000 intron filter:
 NO RESULT, TOO MUCH FILTERED.
+
+BAC Lr6F14 and wMT transcripts, initial 0.1 evalue, 20 coverage, and 5000 intron filter:
+![Screenshot](./images/MT_to_6F14_e1_0.1evalue_5kb_10coverage_filter.png)
