@@ -1,25 +1,25 @@
 # Worked example
 
-This guide will walk through the main Jupyter-Notebook of the software - lrRNAseq_GAST_visualiser.ipynb, cell-by-cell, explaining in detail, how to use each cell, what is being done, and the data structures generated in the process. 
+This guide will walk through the main Jupyter-Notebook of the software - lrRNAseq_TAST_visualiser.ipynb, cell-by-cell, explaining in detail, how to use each cell, what is being done, and the data structures generated in the process. 
 
 For best experience, Linux-based operating systems are advised; this guide will assume you have a Linux-based operating system. This is mostly important when using BLAST.
 
 *= work in progress.
 
-## Step 1 - Download lrRNAseq-GAST
+## Step 1 - Download lrRNAseq-TAST
 
-Download the entire lrRNAseq-GAST repository. This can be done by clicking on the green "<> Code" drop down menu button on the main page of lrRNAseq-GAST repository, then clicking "Download ZIP", and extracting the ZIP into the directory of choice.
+Download the entire lrRNAseq-TAST repository. This can be done by clicking on the green "<> Code" drop down menu button on the main page of lrRNAseq-TAST repository, then clicking "Download ZIP", and extracting the ZIP into the directory of choice.
 
 An alternative method is to use git:
 ```
-git clone https://github.com/Maxim-Karpov/lrRNAseq-GAST.git
+git clone https://github.com/Maxim-Karpov/lrRNAseq-TAST.git
 ```
 
 ## Step 2 - Install Anaconda Python distribution
 
 For novice users it is recommended to install Anaconda distribution platform which contains Python, Jupyter-Notebook, and some required Python libraries such as Pandas and Matplotlib, and adds Python to your shell environment. Follow the instructions on the official Anaconda website - https://www.anaconda.com/download. 
 
-Once installed, open Jupyter-Notebook through Anaconda Navigator and launch lrRNAseq-GAST by opening lrRNAseq_GAST_visualiser.ipynb. The full list of dependencies includes: Pandas, Matplotlib, Numpy, Regex, Biopython, OS, ast, operator. With Anaconda, you should only need to manually install biopython and seqtk:
+Once installed, open Jupyter-Notebook through Anaconda Navigator and launch lrRNAseq-TAST by opening lrRNAseq_TAST_visualiser.ipynb. The full list of dependencies includes: Pandas, Matplotlib, Numpy, Regex, Biopython, OS, ast, operator. With Anaconda, you should only need to manually install biopython and seqtk:
 ```
 conda install anaconda::biopython
 conda install bioconda::seqtk
@@ -27,7 +27,7 @@ conda install bioconda::seqtk
 
 ## Step 3 - Check all imports
 
-To check whether all dependencies are present in your Python environment, and the supplementary functions can be imported successfully, run the first cell of the notebook. The bioinformatic_functions.ipynb must be in the same directory as lrRNAseq_GAST_visualiser.ipynb for this to work. In case some dependencies are missing, consult the internet on their installation.
+To check whether all dependencies are present in your Python environment, and the supplementary functions can be imported successfully, run the first cell of the notebook. The bioinformatic_functions.ipynb must be in the same directory as lrRNAseq_TAST_visualiser.ipynb for this to work. In case some dependencies are missing, consult the internet on their installation.
 
 ```
 import pandas as pd
@@ -60,13 +60,13 @@ Make BLAST database of your genomic sequence. Here we're using Ef318A10.fst (pro
 makeblastdb -in Ef318A10.fst -dbtype nucl -parse_seqids -out 318A10_db -title 318A10_db
 ```
 
-Align long read RNAseq transcripts to a genomic region using BLAST with alignment parameters of your choice. Example transcript file "all_transcripts.fasta" was supplied in the lrRNAseq-GAST repository.
+Align long read RNAseq transcripts to a genomic region using BLAST with alignment parameters of your choice. Example transcript file "all_transcripts.fasta" was supplied in the lrRNAseq-TAST repository.
 
 ```
-blastn -query /home/maxim/Projects/BACs/publication/lrRNAseq_GAST/all_transcripts.fasta -db 318A10_db -max_hsps 10000 -task blastn -word_size 4 -evalue 10 -num_threads 10 -out lrRNAseq_to_Ef318A10.out -outfmt '6 qseqid sseqid slen qlen qstart qend sstart send length mismatch gapopen pident evalue bitscore'
+blastn -query /home/maxim/Projects/BACs/publication/lrRNAseq_TAST/all_transcripts.fasta -db 318A10_db -max_hsps 10000 -task blastn -word_size 4 -evalue 10 -num_threads 10 -out lrRNAseq_to_Ef318A10.out -outfmt '6 qseqid sseqid slen qlen qstart qend sstart send length mismatch gapopen pident evalue bitscore'
 ```
 
-Important: lrRNAseq-GAST assumes you will use -outfmt '6 qseqid sseqid slen qlen qstart qend sstart send length mismatch gapopen pident evalue bitscore' BLAST output format. 
+Important: lrRNAseq-TAST assumes you will use -outfmt '6 qseqid sseqid slen qlen qstart qend sstart send length mismatch gapopen pident evalue bitscore' BLAST output format. 
 
 
 -word_size 4, -evalue 10 will yield highest sensitivity, and will detect very short exons, but may take unreasonably long to run, and produce many false positives. If such sensitivity is really desired, it is recommended to run BLAST for some managable period of time (e.g. 10 minutes), and interrupt the command; this should still work given your transcripts of interest in your lrRNAseq dataset are not rare / poorly expressed / of low abundance. Note: evalue parameter affect BLAST running time but does affect memory usage (in our use cases, negligibly). 
@@ -82,7 +82,7 @@ It is recommended to run high e-value (10) in all cases, then perform e-value fi
 In the following notebook cell, provide path to your BLAST output. For example:
 
 ```
-TRANSCRIPT_TO_GENOME_BLAST_PATH = "/home/maxim/Projects/BACs/publication/lrRNAseq_GAST/lrRNAseq_to_Ef318A10.out"
+TRANSCRIPT_TO_GENOME_BLAST_PATH = "/home/maxim/Projects/BACs/publication/lrRNAseq_TAST/lrRNAseq_to_Ef318A10.out"
 all_blast = read_blast(TRANSCRIPT_TO_GENOME_BLAST_PATH)
 ```
 
@@ -760,7 +760,7 @@ lrRNAseq_plot_df["syntenous_indexes_int_unwrapped"]  = lrRNAseq_plot_df["synteno
 
 ## Step 16 - Plot everything*
 
-This is the final step, which produces the lrRNAseq-GAST plot. Run the cell. The image will pop up in the notebook. You can save the image by right clicking with the mouse whilst holding Ctrl on the keyboard. The majority of the plotted alignment regions will be false positives, but the real alignments of transcript exons onto their complementary genes will be obvious to the naked eye i.e. the introns will be short, exons compact and non-repetitive, multiple transcripts will be consistently supportive of the gene's existence. You can expect to see a lot less false positives, but retain the majority of the legitimate transcript alignments if you configure the filtration options e.g. set MAX_INTRON_LENGHT to 7000 and MIN_COVERAGE to 35. But you may miss out on certain rare genes which naturally have large exons; in the case of our example, we don't miss anything using these parameters, but remove 50%+ of the false positives.
+This is the final step, which produces the lrRNAseq-TAST plot. Run the cell. The image will pop up in the notebook. You can save the image by right clicking with the mouse whilst holding Ctrl on the keyboard. The majority of the plotted alignment regions will be false positives, but the real alignments of transcript exons onto their complementary genes will be obvious to the naked eye i.e. the introns will be short, exons compact and non-repetitive, multiple transcripts will be consistently supportive of the gene's existence. You can expect to see a lot less false positives, but retain the majority of the legitimate transcript alignments if you configure the filtration options e.g. set MAX_INTRON_LENGHT to 7000 and MIN_COVERAGE to 35. But you may miss out on certain rare genes which naturally have large exons; in the case of our example, we don't miss anything using these parameters, but remove 50%+ of the false positives.
 
 ```
 seq_length = seq_len
@@ -903,7 +903,7 @@ for idx in range(nrows):
     axes[idx].set_yticklabels([])
 ```
 
-![Screenshot](./images/lrRNAseq_GAST_plot_example.png)
+![Screenshot](./images/lrRNAseq_TAST_plot_example.png)
 
 If you would like to extract/investigate certain transcripts on the plot, you can query lrRNAseq_plot_df dataframe. This requires lightweight knowledge of Python's Pandas dataframes. Generally, you can extract these transcripts by querying a specified range of coordinates into which the transcript falls. For example, in the image above, there are 6-9 transcripts that are visually likely to be aligned to a gene in the genomic range of 25,000 - 45,000 bp. Each row in the lrRNAseq_plot_df dataframe represents a row/track in the plot e.g. the uppermost track will be the first row of the dataframe, whilst the lowermost will be the last row of dataframe. At the moment, there is no way to query the transcript by its coordinate range, this is work in progress. The easiest way to obtain your transcript is via index in the lrRNAseq_plot_df, which will equal its row on the plot counting from the top to bottom. For example, the transcripts of interest at the genomic range of 25k-45k are in the rows 20-23 on the plot, so we can fetch them in the following way:
 
