@@ -20,4 +20,4 @@
 
 # Implemented
 
-- lrRNAseq-GAST 1.0.
+- lrRNAseq-TAST 1.0.
