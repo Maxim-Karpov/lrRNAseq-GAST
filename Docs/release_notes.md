@@ -11,6 +11,7 @@
 - Provide colour coding to the alignments based on alignment e-value, PID, or bitscore.
 - Filter by e-value.
 - User-friendly interface/wrapper.
+- Ability to conveniently visualise which parts of the transcript aligned to the genome (5'UTR/ORF/3'UTR).
 
 # Known bugs/design flaws
 
